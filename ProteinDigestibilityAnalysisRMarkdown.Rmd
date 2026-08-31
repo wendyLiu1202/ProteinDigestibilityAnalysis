@@ -7,18 +7,73 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)    # load the package
+library(ggplot2)
+library(dplyr)
 
 ```
 
-## R Markdown
+## Calculating Digestibility Coefficients
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r Transforming Data}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+DigestibilityData <- read.csv("/Users/wendy/Downloads/Stirling_Digestibility.csv")
 
-```{r cars}
-summary(cars)
+Controls = subset(DigestibilityData, DigestibilityData$Type == "Control")
+
+Samples = subset(DigestibilityData, DigestibilityData$Type == "Sample")
+
+
+# Calculate average Protein_Kjeldahl per Sample.Name in Controls
+control_avg = aggregate(Protein_Kjeldahl ~ Sample.Name, data = Controls, FUN = mean)
+names(control_avg)[2] = "averageControl"
+
+# Merge that average into the Samples dataframe, matching by Sample.Name
+Samples = merge(Samples, control_avg, by = "Sample.Name")
+
+Samples$DigestibilityCoeff = (1- (Samples$Protein_Kjeldahl/Samples$averageControl))*100
+
+
 ```
+
+```{r statistics}
+
+res.aov <- aov(Digestibility ~ Ingredient, data = MHdig ) #ANOVA
+plot(res.aov, 2) #QQplot
+aov_residuals <- residuals(object = res.aov) #extract ANOVA residuals
+shapiro.test(x = aov_residuals) #run shapiro-wilk test
+summary(res.aov) #ANOVA results
+b <- summary(res.aov)  
+
+nmc <- pairwise.t.test(MHdig$Digestibility, MHdig$Ingredient, p.adjust.method = "BH") #t-test with no correction
+nmc
+
+d <- ggplot(MHdig, aes(x=Ingredient, y=Digestibility)) + 
+  ylim(0,100)+
+  geom_boxplot(width = 0.6, aes(colour = Ingredient)) +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 4, color = "black", 
+               position = position_dodge(width = 0.75)) +  # Adding mean points
+  theme_bw()+ 
+  ylab("Digestibility (%)")+
+  xlab("Diet") +
+  ggtitle("Crude Protein digestibility") +
+  theme(axis.text = element_text(size = 10), 
+        axis.text.x = element_text(vjust=0.3, ), 
+        axis.title = element_text(size = 12, face = "plain"),                     
+#        panel.grid.major.y = element_line(color = "gray", size = 0.75, linetype = 2),   # Adds background lines               
+        plot.margin = unit(c(1,1,1,1), units = , "cm"))+  # Adding a margin
+  annotate(geom="text", x=2.5, y=95, label="p = 5.25e-09 ***", fontface = "italic")+ #adds pvalue text to plot
+  annotate(geom="text", x=1, y=80, label="a") + #adds pvalue text to plot
+  annotate(geom="text", x=2, y=75, label="b") +#adds pvalue text to plot
+  annotate(geom="text", x=3, y=77, label="b") +#adds pvalue text to plot
+  annotate(geom="text", x=4, y=40, label="c") #adds pvalue text to plot
+
+d
+ggsave("MHdig_boxplot.png", width = 5, height = 5, dpi = 300)
+
+
+```
+
 
 ## Including Plots
 
