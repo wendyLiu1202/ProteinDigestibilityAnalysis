@@ -80,16 +80,23 @@ The Kruskal-Wallis test Do the distributions of several independent groups diffe
 
 Mann-Whitney U test (2 groups) or Kruskal-Wallis test (3+ groups) — these compare rank distributions and don't assume normality. Simple and often sufficient if you just want a "is there a difference" answer without modeling mechanics.
 
-## Beta regression
+## 1. Beta regression
 
-```{r }
+```{r Beta regression}
 library(glmmTMB)
 
-model <- glmmTMB(DigestibilityCoeff ~ Sample.Name,
+# we can also test whether there is a batch effect the Date: 
+model_1 <- glmmTMB(DigestibilityCoeff ~ Sample.Name,
+                 data = Samples,
+                 family = beta_family(link = "logit"))
+
+model_2 <- glmmTMB(DigestibilityCoeff ~ Sample.Name + (1| Date),
                  data = Samples,
                  family = beta_family(link = "logit"))
 
 summary(model)
+
+
 
 ```
 
