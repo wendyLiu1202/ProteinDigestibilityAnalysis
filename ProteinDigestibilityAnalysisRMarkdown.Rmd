@@ -114,13 +114,36 @@ null_model <- glmmTMB(DigestibilityCoeff ~ 1,
 
 lrtest(model_1, null_model)
 
-anova(null_model, model) # its the same thing as lrtest
+anova(null_model, model_1) # its the same thing as lrtest
 
 ```
 since p = 1.09e-06 (p<0.05), this confirms that there is a significant effect of treatment somewhere among the groups.
 
+## beta regression follow up: Pairwise comparisons 
 
-beta regression
+to see which specific treatments differ from each other
+
+
+```{r Pairwise comparison}
+
+library(emmeans)
+results = emmeans(model_1, pairwise ~ Sample.Name, type = "response")
+
+# estimated mean digestibility per treatment
+
+results$emmeans
+
+# This gives us the back-transformed (proportion-scale) estimated digestibility coefficient for each treatment, with 95% confidence intervals:
+
+# Response
+
+# Extract the contrasts part and convert to a data frame
+contrasts_df <- as.data.frame(results$contrasts)
+
+# View it
+contrasts_df
+
+```
 
 The Kruskal-Wallis test (also called H-test) is a non-parametric statistical test used to compare three or more independent groups to determine whether their distributions differ. The Kruskal-Wallis test extends the Mann-Whitney U test to more than two independent groups.
 
