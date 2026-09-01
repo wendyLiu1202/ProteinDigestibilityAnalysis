@@ -253,8 +253,10 @@ p
 
 
 ```
-
+## To be continue.... 
 ## Kruskal-Wallis test
+
+see this page
 The Kruskal-Wallis test (also called H-test) is a non-parametric statistical test used to compare three or more independent groups to determine whether their distributions differ. The Kruskal-Wallis test extends the Mann-Whitney U test to more than two independent groups.
 
 The Kruskal-Wallis test is used when the assumptions for a one-way analysis of variance are not met. Because the Kruskal-Wallis test is a non-parametric test, the data used do not have to be normally distributed.
