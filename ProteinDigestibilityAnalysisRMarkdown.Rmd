@@ -2,7 +2,7 @@
 title: "ProteinDigestibilityAnalysisRMarkdown"
 author: "Wendy Liu"
 date: "2026-08-31"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
