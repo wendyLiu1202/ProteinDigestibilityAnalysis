@@ -147,10 +147,12 @@ contrasts_df <- as.data.frame(results$contrasts)
 contrasts_df
 
 ```
+## Plots
+
 ```{r plots}
 
 library(ggplot2)
-library(ggpubr)   # for stat_pvalue_manual
+library(ggpubr)
 library(dplyr)
 library(tidyr)
 
@@ -252,7 +254,6 @@ p
 
 ```
 
-
 ## Kruskal-Wallis test
 The Kruskal-Wallis test (also called H-test) is a non-parametric statistical test used to compare three or more independent groups to determine whether their distributions differ. The Kruskal-Wallis test extends the Mann-Whitney U test to more than two independent groups.
 
@@ -260,66 +261,4 @@ The Kruskal-Wallis test is used when the assumptions for a one-way analysis of v
 
 The data must at least have an ordinal scale level and the samples must be independent.
 
-```{r statistics}
-
-# residuals significantly deviate from normality
-
-Samples$log_DC <- log(Samples$DigestibilityCoeff)
-res.aov <- aov(log_DC ~ Sample.Name, data = Samples) #ANOVA
-plot(res.aov, 2) #QQplot
-aov_residuals <- residuals(object = res.aov) #extract ANOVA residuals
-shapiro.test(x = aov_residuals) #run shapiro-wilk test
-
-Samples$sqrt_DC <- sqrt(Samples$DigestibilityCoeff)
-res.aov <- aov(sqrt_DC ~ Sample.Name, data = Samples) #ANOVA
-aov_residuals <- residuals(object = res.aov) #extract ANOVA residuals
-shapiro.test(x = aov_residuals) #run shapiro-wilk test
-
-
-# or for proportions/percentages bounded 0-1:
-
-
-summary(res.aov) #ANOVA results
-b <- summary(res.aov)  
-
-nmc <- pairwise.t.test(MHdig$Digestibility, MHdig$Ingredient, p.adjust.method = "BH") #t-test with no correction
-nmc
-
-d <- ggplot(MHdig, aes(x=Ingredient, y=Digestibility)) + 
-  ylim(0,100)+
-  geom_boxplot(width = 0.6, aes(colour = Ingredient)) +
-  stat_summary(fun = mean, geom = "point", shape = 18, size = 4, color = "black", 
-               position = position_dodge(width = 0.75)) +  # Adding mean points
-  theme_bw()+ 
-  ylab("Digestibility (%)")+
-  xlab("Diet") +
-  ggtitle("Crude Protein digestibility") +
-  theme(axis.text = element_text(size = 10), 
-        axis.text.x = element_text(vjust=0.3, ), 
-        axis.title = element_text(size = 12, face = "plain"),                     
-#        panel.grid.major.y = element_line(color = "gray", size = 0.75, linetype = 2),   # Adds background lines               
-        plot.margin = unit(c(1,1,1,1), units = , "cm"))+  # Adding a margin
-  annotate(geom="text", x=2.5, y=95, label="p = 5.25e-09 ***", fontface = "italic")+ #adds pvalue text to plot
-  annotate(geom="text", x=1, y=80, label="a") + #adds pvalue text to plot
-  annotate(geom="text", x=2, y=75, label="b") +#adds pvalue text to plot
-  annotate(geom="text", x=3, y=77, label="b") +#adds pvalue text to plot
-  annotate(geom="text", x=4, y=40, label="c") #adds pvalue text to plot
-
-
-=
-d
-ggsave("MHdig_boxplot.png", width = 5, height = 5, dpi = 300)
-
-
-```
-
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+`
