@@ -82,23 +82,43 @@ Mann-Whitney U test (2 groups) or Kruskal-Wallis test (3+ groups) — these comp
 
 ## 1. Beta regression
 
-```{r Beta regression}
+```{r Beta regression: batch effect}
 library(glmmTMB)
+library(lmtest)
 
 # we can also test whether there is a batch effect the Date: 
 model_1 <- glmmTMB(DigestibilityCoeff ~ Sample.Name,
                  data = Samples,
                  family = beta_family(link = "logit"))
 
+Samples$Date <- as.factor(Samples$Date)
+
 model_2 <- glmmTMB(DigestibilityCoeff ~ Sample.Name + (1| Date),
                  data = Samples,
                  family = beta_family(link = "logit"))
 
-summary(model)
-
-
+lrtest(model_1, model_2)
 
 ```
+
+As p > 0.05, the liklyhood ratio test suggested that adding the random effect for Date made no difference at all to the model fit.
+
+As such we are going for the model, model_1, without adding the random effect for Date
+
+
+```{r Beta regression: are there significant difference in digestbility between feed}
+
+null_model <- glmmTMB(DigestibilityCoeff ~ 1,
+                       data = Samples,
+                       family = beta_family(link = "logit"))
+
+lrtest(model_1, null_model)
+
+anova(null_model, model) # its the same thing as lrtest
+
+```
+since p = 1.09e-06 (p<0.05), this confirms that there is a significant effect of treatment somewhere among the groups.
+
 
 beta regression
 
