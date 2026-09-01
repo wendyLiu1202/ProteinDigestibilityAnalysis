@@ -23,7 +23,6 @@ Controls = subset(DigestibilityData, DigestibilityData$Type == "Control")
 
 Samples = subset(DigestibilityData, DigestibilityData$Type == "Sample")
 
-
 # Calculate average Protein_Kjeldahl per Sample.Name in Controls
 control_avg = aggregate(Protein_Kjeldahl ~ Sample.Name, data = Controls, FUN = mean)
 names(control_avg)[2] = "averageControl"
@@ -31,17 +30,98 @@ names(control_avg)[2] = "averageControl"
 # Merge that average into the Samples dataframe, matching by Sample.Name
 Samples = merge(Samples, control_avg, by = "Sample.Name")
 
-Samples$DigestibilityCoeff = (1- (Samples$Protein_Kjeldahl/Samples$averageControl))*100
+Samples$DigestibilityCoeff = 1- (Samples$Protein_Kjeldahl/Samples$averageControl)
 
 
 ```
+## Statistics
 
-```{r statistics}
+Question: Does the ingredient of the feed (Sample.Name) has a significant impact on the digestibility coefficient (DigestibilityCoeff) ? 
 
-res.aov <- aov(Digestibility ~ Ingredient, data = MHdig ) #ANOVA
+DigestibilityCoeff ~ Sample.Name
+
+Digestibility coefficient is measured independently i.e. only after the HG phase; 
+It is also a continuous proportions (not from discrete counts), especially with values clustering near 0 or 1.
+
+The first thing we need to check is the normality of the data contribution
+
+```{r Normality test if we are to do ANOVA}
+
+range(Samples$DigestibilityCoeff, na.rm = TRUE)
+# This confirmed the proportions/percentages are indeed bounded 0-1
+
+res.aov <- aov(DigestibilityCoeff ~ Sample.Name, data = Samples) #ANOVA
+
 plot(res.aov, 2) #QQplot
 aov_residuals <- residuals(object = res.aov) #extract ANOVA residuals
 shapiro.test(x = aov_residuals) #run shapiro-wilk test
+
+#  p < 0.05 -> residuals significantly deviate from normality
+
+
+Samples$asin_DC <- asin(sqrt(Samples$DigestibilityCoeff))
+
+res.aov <- aov(asin_DC ~ Sample.Name, data = Samples) #ANOVA
+aov_residuals <- residuals(object = res.aov) #extract ANOVA residuals
+shapiro.test(x = aov_residuals) #run shapiro-wilk test
+
+#  p < 0.05 -> residuals significantly deviate from normality even after data transformation
+
+```
+
+Since our proportional data does not mean the assumptions for a one-way anlaysis of varianace, we can either:
+
+1. Use beta regression. It's built specifically for outcomes bounded in (0,1) and doesn't assume normality. It will give us a test of whether your input variable significantly predicts the proportion.
+
+2. non-parametric comparison between groups
+The Kruskal-Wallis test Do the distributions of several independent groups differ? Rather than the analysis of variance (is there a difference in mean), 
+(a) Null hypothesis: The outcome has the same distribution in all groups.
+(b) Alternative hypothesis:The outcome distribution differs for at least one group.
+
+Mann-Whitney U test (2 groups) or Kruskal-Wallis test (3+ groups) — these compare rank distributions and don't assume normality. Simple and often sufficient if you just want a "is there a difference" answer without modeling mechanics.
+
+## Beta regression
+
+```{r }
+library(glmmTMB)
+
+model <- glmmTMB(DigestibilityCoeff ~ Sample.Name,
+                 data = Samples,
+                 family = beta_family(link = "logit"))
+
+summary(model)
+
+```
+
+beta regression
+
+The Kruskal-Wallis test (also called H-test) is a non-parametric statistical test used to compare three or more independent groups to determine whether their distributions differ. The Kruskal-Wallis test extends the Mann-Whitney U test to more than two independent groups.
+
+The Kruskal-Wallis test is used when the assumptions for a one-way analysis of variance are not met. Because the Kruskal-Wallis test is a non-parametric test, the data used do not have to be normally distributed.
+
+The data must at least have an ordinal scale level and the samples must be independent.
+
+```{r statistics}
+
+# residuals significantly deviate from normality
+
+Samples$log_DC <- log(Samples$DigestibilityCoeff)
+res.aov <- aov(log_DC ~ Sample.Name, data = Samples) #ANOVA
+plot(res.aov, 2) #QQplot
+aov_residuals <- residuals(object = res.aov) #extract ANOVA residuals
+shapiro.test(x = aov_residuals) #run shapiro-wilk test
+
+
+Samples$sqrt_DC <- sqrt(Samples$DigestibilityCoeff)
+res.aov <- aov(sqrt_DC ~ Sample.Name, data = Samples) #ANOVA
+aov_residuals <- residuals(object = res.aov) #extract ANOVA residuals
+shapiro.test(x = aov_residuals) #run shapiro-wilk test
+
+
+# or for proportions/percentages bounded 0-1:
+
+
+
 summary(res.aov) #ANOVA results
 b <- summary(res.aov)  
 
@@ -67,6 +147,9 @@ d <- ggplot(MHdig, aes(x=Ingredient, y=Digestibility)) +
   annotate(geom="text", x=2, y=75, label="b") +#adds pvalue text to plot
   annotate(geom="text", x=3, y=77, label="b") +#adds pvalue text to plot
   annotate(geom="text", x=4, y=40, label="c") #adds pvalue text to plot
+
+
+
 
 d
 ggsave("MHdig_boxplot.png", width = 5, height = 5, dpi = 300)
